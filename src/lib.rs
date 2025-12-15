@@ -73,6 +73,45 @@ pub const MODULUS_15P: u32 = 32749;
 pub const MODULUS_31P: u64 = 2147483629;
 
 // ============================================================================
+// Fast Modular Reduction
+//
+// The moduli are of the form 2^k - c where c is small:
+// - 65519 = 2^16 - 17
+// - 4294967291 = 2^32 - 5
+//
+// This allows fast reduction: x % (2^k - c) ≡ (x >> k) * c + (x & (2^k - 1))
+// ============================================================================
+
+/// Fast reduction for modulus 65519 = 2^16 - 17
+/// Input: x < 2^25 (after shift+add, max is 65518*256 + 255 = 16,772,863)
+#[inline(always)]
+fn fast_mod_65519(x: u32) -> u32 {
+    // First reduction: x = hi * 2^16 + lo, result = hi * 17 + lo
+    let hi = x >> 16;
+    let lo = x & 0xFFFF;
+    let r = hi * 17 + lo;
+    // r < 17 * 256 + 65536 = 69888
+    // Second reduction
+    let hi2 = r >> 16;
+    let lo2 = r & 0xFFFF;
+    let r2 = hi2 * 17 + lo2;
+    // r2 < 17 * 2 + 65536 = 65570
+    if r2 >= MODULUS_16 { r2 - MODULUS_16 } else { r2 }
+}
+
+/// Fast reduction for modulus 4294967291 = 2^32 - 5
+/// Input: x < 2^40 (after shift+add)
+#[inline(always)]
+fn fast_mod_4294967291(x: u64) -> u64 {
+    // x = hi * 2^32 + lo, result = hi * 5 + lo
+    let hi = x >> 32;
+    let lo = x & 0xFFFFFFFF;
+    let r = hi * 5 + lo;
+    // r < 5 * 2^8 + 2^32, need one check
+    if r >= MODULUS_32 { r - MODULUS_32 } else { r }
+}
+
+// ============================================================================
 // Pure Rust Implementation - Core Functions
 // ============================================================================
 
@@ -141,7 +180,34 @@ pub fn koopman8_with_modulus(data: &[u8], initial_seed: u8, modulus: u32) -> u8 
 /// ```
 #[inline]
 pub fn koopman16(data: &[u8], initial_seed: u8) -> u16 {
-    koopman16_with_modulus(data, initial_seed, MODULUS_16)
+    if data.is_empty() {
+        return 0;
+    }
+
+    let mut sum: u64 = (data[0] ^ initial_seed) as u64;
+
+    // Process bytes with delayed modulo reduction every 2 bytes
+    // This reduces the number of modulo operations by half
+    let mut count = 0;
+    for &byte in &data[1..] {
+        sum = (sum << 8) + byte as u64;
+        count += 1;
+        if count == 2 {
+            sum = fast_mod_65519(sum as u32) as u64;
+            count = 0;
+        }
+    }
+
+    // Final reduction if needed
+    if count > 0 {
+        sum = fast_mod_65519(sum as u32) as u64;
+    }
+
+    // Append two implicit zero bytes
+    sum = fast_mod_65519((sum << 8) as u32) as u64;
+    sum = fast_mod_65519((sum << 8) as u32) as u64;
+
+    sum as u16
 }
 
 /// Compute a 16-bit Koopman checksum with a custom modulus.
@@ -184,7 +250,24 @@ pub fn koopman16_with_modulus(data: &[u8], initial_seed: u8, modulus: u32) -> u1
 /// ```
 #[inline]
 pub fn koopman32(data: &[u8], initial_seed: u8) -> u32 {
-    koopman32_with_modulus(data, initial_seed, MODULUS_32)
+    if data.is_empty() {
+        return 0;
+    }
+
+    let mut sum: u64 = (data[0] ^ initial_seed) as u64;
+
+    // Use fast modular reduction for the default modulus
+    for &byte in &data[1..] {
+        sum = fast_mod_4294967291((sum << 8) + byte as u64);
+    }
+
+    // Append four implicit zero bytes
+    sum = fast_mod_4294967291(sum << 8);
+    sum = fast_mod_4294967291(sum << 8);
+    sum = fast_mod_4294967291(sum << 8);
+    sum = fast_mod_4294967291(sum << 8);
+
+    sum as u32
 }
 
 /// Compute a 32-bit Koopman checksum with a custom modulus.

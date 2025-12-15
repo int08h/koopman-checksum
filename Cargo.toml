@@ -21,6 +21,10 @@ rand = "0.8"
 name = "benchmarks"
 harness = false
 
+[[bench]]
+name = "optimization_comparison"
+harness = false
+
 [profile.release]
 lto = true
 codegen-units = 1

@@ -35,3 +35,4 @@ cargo bench
 
 ## Notes
 - Do not add "crated by claude" to commit messages
+- You MUST use benchmarks to validate that changes actually do improve performance. Make no assumptions, you must always test before and after and confirm quantitatively the results.
