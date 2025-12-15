@@ -248,10 +248,8 @@ pub fn koopman8p(data: &[u8], initial_seed: u8) -> u8 {
     // Append implicit zero byte
     sum = (sum << 8) % MODULUS_7P;
 
-    // Include checksum in parity calculation
-    psum ^= sum as u8;
-
     // Pack: checksum in upper 7 bits, parity in LSB
+    // Parity is computed from data bytes only (not checksum)
     ((sum as u8) << 1) | parity8(psum)
 }
 
@@ -272,23 +270,20 @@ pub fn koopman16p(data: &[u8], initial_seed: u8) -> u16 {
     }
 
     let mut sum: u32 = (data[0] ^ initial_seed) as u32;
-    let mut psum: u32 = sum;
+    let mut psum: u8 = sum as u8;
 
     for &byte in &data[1..] {
         sum = ((sum << 8) + byte as u32) % MODULUS_15P;
-        psum ^= byte as u32;
+        psum ^= byte;
     }
 
     // Append two implicit zero bytes
     sum = (sum << 8) % MODULUS_15P;
     sum = (sum << 8) % MODULUS_15P;
 
-    // Include checksum in parity calculation (fold to single byte, then get parity)
-    let checksum_parity = (sum as u8) ^ ((sum >> 8) as u8);
-    psum ^= checksum_parity as u32;
-
     // Pack: checksum in upper 15 bits, parity in LSB
-    ((sum as u16) << 1) | (parity8(psum as u8) as u16)
+    // Parity is computed from data bytes only (not checksum)
+    ((sum as u16) << 1) | (parity8(psum) as u16)
 }
 
 /// Compute a 32-bit Koopman checksum with parity (31-bit checksum + 1 parity bit).
@@ -308,11 +303,11 @@ pub fn koopman32p(data: &[u8], initial_seed: u8) -> u32 {
     }
 
     let mut sum: u64 = (data[0] ^ initial_seed) as u64;
-    let mut psum: u32 = sum as u32;
+    let mut psum: u8 = sum as u8;
 
     for &byte in &data[1..] {
         sum = ((sum << 8) + byte as u64) % MODULUS_31P;
-        psum ^= byte as u32;
+        psum ^= byte;
     }
 
     // Append four implicit zero bytes
@@ -321,13 +316,9 @@ pub fn koopman32p(data: &[u8], initial_seed: u8) -> u32 {
     sum = (sum << 8) % MODULUS_31P;
     sum = (sum << 8) % MODULUS_31P;
 
-    // Include checksum in parity calculation
-    let cs = sum as u32;
-    let checksum_parity = (cs as u8) ^ ((cs >> 8) as u8) ^ ((cs >> 16) as u8) ^ ((cs >> 24) as u8);
-    psum ^= checksum_parity as u32;
-
     // Pack: checksum in upper 31 bits, parity in LSB
-    ((sum as u32) << 1) | (parity8(psum as u8) as u32)
+    // Parity is computed from data bytes only (not checksum)
+    ((sum as u32) << 1) | (parity8(psum) as u32)
 }
 
 // ============================================================================
@@ -791,20 +782,20 @@ mod tests {
 
     #[test]
     fn test_koopman8p_parity_correctness() {
-        // Verify that the parity bit correctly reflects the parity of data + checksum
+        // Verify that the parity bit correctly reflects the parity of data bytes only
+        // (per the reference C implementation, checksum is NOT included in parity)
         let data = b"Test";
         let result = koopman8p(data, 0);
 
         // The checksum is in upper 7 bits
-        let checksum = result >> 1;
+        let _checksum = result >> 1;
         let parity_bit = result & 1;
 
-        // Compute expected parity: XOR all data bytes, then XOR with checksum
+        // Compute expected parity: XOR all data bytes (NOT including checksum)
         let mut expected_parity: u8 = 0;
         for &byte in data {
             expected_parity ^= byte;
         }
-        expected_parity ^= checksum;
         let expected_parity_bit = expected_parity.count_ones() & 1;
 
         assert_eq!(parity_bit as u32, expected_parity_bit);
