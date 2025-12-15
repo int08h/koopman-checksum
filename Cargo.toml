@@ -1,0 +1,26 @@
+[package]
+name = "koopman-checksum"
+version = "0.1.0"
+edition = "2021"
+authors = ["Based on Philip Koopman's algorithm from arXiv:2304.13496"]
+description = "Koopman checksum algorithm implementation"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/example/koopman-checksum"
+keywords = ["checksum", "koopman", "error-detection"]
+categories = ["algorithms", "no-std"]
+
+[features]
+default = ["std"]
+std = []
+
+[dev-dependencies]
+criterion = "0.5"
+rand = "0.8"
+
+[[bench]]
+name = "benchmarks"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
