@@ -2,6 +2,9 @@
 //!
 //! Run with: `cargo bench`
 
+// Copyright (c) 2025 the koopman-checksum authors, all rights reserved.
+// See README.md for licensing information.
+
 use criterion::{
     black_box, criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, BenchmarkId,
     Criterion, Throughput,

@@ -1,27 +1,26 @@
 # Koopman Checksum
 
-A Rust implementation of the Koopman checksum algorithm as described in:
+A no-std implementation of the Koopman checksum algorithm as described in:
 
 > Philip Koopman, "An Improved Modular Addition Checksum Algorithm"
 > [arXiv:2304.13496](https://arxiv.org/abs/2304.13496) (2023)
 
 ## Overview
 
-The Koopman checksum provides **Hamming Distance 3 (HD=3)** fault detection for significantly longer data words than traditional dual-sum checksums like Fletcher, while using only a single running sum that is twice the size of the final check value.
+The Koopman checksum provides **Hamming Distance 3 (HD=3)** fault detection for significantly longer data words than traditional dual-sum checksums like Adler, while using a single running sum.
 
-### Key Features
+### Advantages of Koopman Checksum
 
-- **Better fault detection** than Fletcher/Adler checksums for the same check value size
-- **Simpler computation** than CRC (uses integer division, not polynomial arithmetic)
-- **HD=3** detection for data up to 4KB (16-bit) or 134MB (32-bit)
-- **HD=4** variants available with parity bit
-- **No-std compatible** for embedded systems
+- Better fault detection than Fletcher/Adler dual-sum checksums for the same output check value size
+- Simpler computation than CRC (uses integer division, not polynomial arithmetic)
+- HD=3 detection for data up to 13 bytes (8-bit), 4,096 bytes (16-bit), or 134MiB (32-bit)
+- HD=4 detection with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
 
 ### Algorithm
 
 The computational kernel is elegantly simple:
 
-```
+```text
 sum = ((sum << k) + block) % modulus
 ```
 
@@ -46,16 +45,18 @@ use koopman_checksum::{koopman8, koopman16, koopman32};
 let data = b"Hello, World!";
 
 // 8-bit checksum (HD=3 up to 13 bytes)
-let cs8 = koopman8(data, 0);
+let cs8 = koopman8(data, 0x01);
 
-// 16-bit checksum (HD=3 up to 4092 bytes)
-let cs16 = koopman16(data, 0);
+// 16-bit checksum (HD=3 up to 4,092 bytes)
+let cs16 = koopman16(data, 0x01);
 
 // 32-bit checksum (HD=3 up to 134,217,720 bytes)
-let cs32 = koopman32(data, 0);
+let cs32 = koopman32(data, 0x01);
 ```
 
-The second argument is the seed. A seed of 0 is simple but means leading zero bytes don't affect the checksum. Use a non-zero seed (e.g., 1) if you need to detect leading zeros.
+The second argument is the initial seed value. **A non-zero initial value (e.g., 1) is recommended** as this detects leading zeros in the data. 
+
+**Warning: An initial seed of 0 means leading zero bytes in the data don't affect the checksum value.** Use an initial seed of 0 only if you want this behavior.
 
 ### Verification
 
@@ -63,10 +64,10 @@ The second argument is the seed. A seed of 0 is simple but means leading zero by
 use koopman_checksum::{koopman16, verify16};
 
 let data = b"Important data";
-let checksum = koopman16(data, 0);
+let checksum = koopman16(data, 0x01);
 
 // Later, verify integrity
-if verify16(data, checksum, 0) {
+if verify16(data, checksum, 0x01) {
     println!("Data is intact");
 } else {
     println!("Data corruption detected!");
@@ -97,13 +98,13 @@ use koopman_checksum::{koopman8p, koopman16p, koopman32p};
 let data = b"Critical data";
 
 // 8-bit with parity (HD=4 up to 5 bytes)
-let cs8p = koopman8p(data, 0);
+let cs8p = koopman8p(data, 0x01);
 
-// 16-bit with parity (HD=4 up to 2044 bytes)
-let cs16p = koopman16p(data, 0);
+// 16-bit with parity (HD=4 up to 2,044 bytes)
+let cs16p = koopman16p(data, 0x01);
 
 // 32-bit with parity (HD=4 up to 134,217,720 bytes)
-let cs32p = koopman32p(data, 0);
+let cs32p = koopman32p(data, 0x01);
 ```
 
 ## Performance
@@ -115,10 +116,10 @@ cargo bench
 
 ### Why SIMD Doesn't Help
 
-You might wonder why this library doesn't include SIMD optimizations. The Koopman checksum algorithm has a fundamental property that prevents parallelization: **sequential data dependency**.
+You might wonder why this library doesn't include SIMD optimizations. The Koopman checksum algorithm has a fundamental property that prevents parallelization: sequential data dependency.
 
 The core computation is:
-```rust
+```text
 for byte in data {
     sum = ((sum << k) + byte) % modulus;
 }
@@ -151,10 +152,10 @@ I am not experienced with simd techniques. If you know how to speed things up, p
 
 ## Use Cases
 
-- **Embedded systems**: Simpler than CRC, better than Fletcher
-- **Network protocols**: Fast integrity checking
-- **File storage**: Corruption detection for small-to-medium files
-- **Memory integrity**: Detect bit flips in RAM
+- Embedded systems: Simpler than CRC, better than Adler/Fletcher
+- Network protocols: Fast integrity checking
+- File storage: Corruption detection for small-to-medium files
+- Memory integrity: Detect bit flips in RAM
 
 ## No-Std Support
 
@@ -168,7 +169,7 @@ koopman-checksum = { version = "0.1", default-features = false }
 ## References
 
 - [arXiv:2304.13496](https://arxiv.org/abs/2304.13496) - Original paper
-- [Koopman CRC Resource Page](https://users.ece.cmu.edu/~koopman/crc/) - Additional resources
+- [Koopman CRC Resource Page](https://users.ece.cmu.edu/~koopman/crc/) - Checksum and CRC resources
 - [Understanding Checksums and CRCs](https://users.ece.cmu.edu/~koopman/crc/book/index.html) - Book by Philip Koopman
 
 ## License
@@ -180,7 +181,21 @@ Licensed under either of:
 
 at your option.
 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Copyright
+
+Copyright (c) 2025 the koopman-checksum contributors, all rights reserved.
+
 ## Credits
 
 Algorithm designed by Prof. Philip Koopman, Carnegie Mellon University.
-Rust implementation by the community.
+Implementation by Stuart Stock (stuart@int08h.com)
+
+

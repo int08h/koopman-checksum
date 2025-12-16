@@ -1,13 +1,16 @@
 [package]
 name = "koopman-checksum"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
-authors = ["Based on Philip Koopman's algorithm from arXiv:2304.13496"]
-description = "Koopman checksum algorithm implementation"
+authors = ["Stuart Stock <stuart@int08h.com>"]
+description = "Koopman checksum algorithm implementation. The Koopman checksum provides Hamming Distance 3 (HD=3) fault detection for significantly longer data words than traditional dual-sum checksums like Adler or Fletcher."
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/example/koopman-checksum"
+repository = "https://github.com/int08h/koopman-checksum"
+documentation = "https://docs.rs/koopman-checksum"
+readme = "README.md"
 keywords = ["checksum", "koopman", "error-detection"]
 categories = ["algorithms", "no-std"]
+rust-version = "1.83.0"
 
 [features]
 default = ["std"]
@@ -15,14 +18,9 @@ std = []
 
 [dev-dependencies]
 criterion = "0.5"
-rand = "0.8"
 
 [[bench]]
 name = "benchmarks"
-harness = false
-
-[[bench]]
-name = "optimization_comparison"
 harness = false
 
 [profile.release]
