@@ -12,7 +12,6 @@ use std::time::Duration;
 // Constants
 // ============================================================================
 
-const MODULUS_8: u32 = 253;      // 2^8 - 3
 const MODULUS_16: u32 = 65519;   // 2^16 - 17
 const MODULUS_32: u64 = 4294967291; // 2^32 - 5
 
@@ -171,7 +170,7 @@ const BARRETT_32_K: u128 = (1u128 << 64) / (MODULUS_32 as u128) + 1;
 fn barrett_mod_4294967291(x: u64) -> u64 {
     // Use 128-bit arithmetic
     let q = ((x as u128 * BARRETT_32_K) >> 64) as u64;
-    let r = x.wrapping_sub(q.wrapping_mul(MODULUS_32 as u64));
+    let r = x.wrapping_sub(q.wrapping_mul(MODULUS_32));
     // Correction
     if r >= MODULUS_32 { r - MODULUS_32 } else { r }
 }
@@ -427,9 +426,12 @@ fn koopman32_delayed_fast(data: &[u8], initial_seed: u8) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
+    #[allow(dead_code)]
     const TEST_DATA: &[u8] = b"123456789";
+    #[allow(dead_code)]
     const LONG_DATA: &[u8] = b"The quick brown fox jumps over the lazy dog";
 
     #[test]
