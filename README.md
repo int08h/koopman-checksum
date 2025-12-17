@@ -13,7 +13,7 @@ The Koopman checksum provides fault detection for significantly longer data valu
 
 - Better fault detection than Fletcher/Adler dual-sum checksums for the same output check value size
 - Simpler computation than CRC (uses integer division, not polynomial arithmetic)
-- Detects all 1-2 bit errors for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MiB (32-bit)
+- Detects all 1-2 bit errors for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MB (32-bit)
 - Detects all 1-3 bit errors with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
 
 ### Error Detection Capabilities
