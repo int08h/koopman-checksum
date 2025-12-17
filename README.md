@@ -54,7 +54,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-koopman-checksum = "0.1"
+koopman-checksum = "1.0"
 ```
 
 ## Usage
