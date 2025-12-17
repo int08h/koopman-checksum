@@ -1,6 +1,6 @@
 [package]
 name = "koopman-checksum"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 authors = ["Stuart Stock <stuart@int08h.com>"]
 description = "Koopman checksum algorithm implementation. The Koopman checksum provides 1- and 2-bit fault detection for significantly longer data words than traditional dual-sum checksums like Adler or Fletcher."
