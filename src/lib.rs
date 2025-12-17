@@ -78,7 +78,10 @@ fn fast_mod_4294967291(x: u64) -> u64 {
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value, **IMPORTANT**: must be non-zero and odd
+///
+/// # Use an odd seed value
+/// To ensure HD=3 fault detection, the initial seed must be odd and non-zero.
 ///
 /// # Returns
 /// 8-bit checksum value, or 0 if data is empty
@@ -100,11 +103,14 @@ pub fn koopman8(data: &[u8], initial_seed: u8) -> u8 {
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value
+/// * `initial_seed` - Initial seed value, **IMPORTANT**: must be non-zero and odd
 /// * `modulus` - The modulus to use (recommended: 253 or 239). Must be non-zero.
 ///
 /// # Returns
 /// 8-bit checksum value, or 0 if data is empty
+///
+/// # Use an odd seed value
+/// To ensure HD=3 fault detection, the initial seed must be odd and non-zero.
 ///
 /// # Example
 /// ```rust
