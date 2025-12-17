@@ -16,16 +16,29 @@ The Koopman checksum provides fault detection for significantly longer data valu
 - Detects all 1-2 bit errors for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MiB (32-bit)
 - Detects all 1-3 bit errors with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
 
-### Understanding Hamming Distance (HD)
+### Error Detection Capabilities
 
-HD refers to the minimum Hamming distance of the _code_, which determines error detection capability:
+| Variant    | Modulus      | Detects all 1-2 bit errors | Detects all 1-3 bit errors |
+|------------|--------------|---------------------------|---------------------------|
+| Koopman8   | 253          | up to 13 bytes            | -                         |
+| Koopman8P  | 125          | -                         | up to 5 bytes             |
+| Koopman16  | 65519        | up to 4092 bytes          | -                         |
+| Koopman16P | 32749        | -                         | up to 2044 bytes          |
+| Koopman32  | 4294967291   | up to 134M bytes          | -                         |
+| Koopman32P | 2147483629   | -                         | up to 134M bytes          |
 
-- _HD=3_: Detects all 1-bit and 2-bit errors (but NOT all 3-bit errors)
-- _HD=4_: Detects all 1-bit, 2-bit, and 3-bit errors (but NOT all 4-bit errors)
+**Note:** Beyond these lengths, the checksums still provide error detection, but some multi-bit errors may go undetected.
 
-The number of detectable bit errors is always HD minus 1.
+### Comparison with Other Checksums
 
-### Algorithm
+| Algorithm    | Detects all 1-2 bit errors (16-bit) | Computation          |
+|--------------|-------------------------------------|----------------------|
+| Fletcher-16  | up to ~21 bytes                     | Dual modular sums    |
+| Adler-16     | up to ~253 bytes                    | Dual modular sums    |
+| Koopman16    | **up to 4092 bytes**                | Single modular sum   |
+| CRC-16       | Varies by polynomial                | Polynomial division  |
+
+## Algorithm
 
 The computational kernel is elegantly simple:
 
@@ -97,7 +110,7 @@ hasher.update(b"Third chunk");
 let checksum = hasher.finalize();
 ```
 
-### Parity Variants (Detects all 1-3 bit errors)
+## Parity Variants (Detects all 1-3 bit errors)
 
 For applications requiring detection of all 1, 2, AND 3-bit errors, use the parity variants:
 
@@ -115,28 +128,6 @@ let cs16p = koopman16p(data, 0x01);
 // 32-bit with parity (detects all 1-3 bit errors up to 134,217,720 bytes)
 let cs32p = koopman32p(data, 0x01);
 ```
-
-## Error Detection Capabilities
-
-| Variant    | Modulus      | Detects all 1-2 bit errors | Detects all 1-3 bit errors |
-|------------|--------------|---------------------------|---------------------------|
-| Koopman8   | 253          | up to 13 bytes            | -                         |
-| Koopman8P  | 125          | -                         | up to 5 bytes             |
-| Koopman16  | 65519        | up to 4092 bytes          | -                         |
-| Koopman16P | 32749        | -                         | up to 2044 bytes          |
-| Koopman32  | 4294967291   | up to 134M bytes          | -                         |
-| Koopman32P | 2147483629   | -                         | up to 134M bytes          |
-
-**Note:** Beyond these lengths, the checksums still provide error detection, but some multi-bit errors may go undetected.
-
-## Comparison with Other Checksums
-
-| Algorithm    | Detects all 1-2 bit errors (16-bit) | Computation          |
-|--------------|-------------------------------------|----------------------|
-| Fletcher-16  | up to ~21 bytes                     | Dual modular sums    |
-| Adler-16     | up to ~253 bytes                    | Dual modular sums    |
-| Koopman16    | **up to 4092 bytes**                | Single modular sum   |
-| CRC-16       | Varies by polynomial                | Polynomial division  |
 
 ## Use Cases
 
@@ -161,7 +152,7 @@ Run benchmarks with:
 cargo bench
 ```
 
-### Why SIMD Doesn't Help
+## Why SIMD Doesn't Help
 
 You might wonder why this library doesn't include SIMD optimizations. The Koopman checksum algorithm has a fundamental property that prevents parallelization: sequential data dependency.
 
@@ -177,6 +168,14 @@ Each iteration's result (`sum[n]`) depends on the previous iteration's result (`
 The pure Rust implementation was consistently 20-40% faster than the simd implementations I could come up with. But
 I am not experienced with simd techniques. If you know how to speed things up, please submit a PR!
 
+## Understanding Hamming Distance (HD) Terminology
+
+HD refers to the minimum Hamming distance of the _code words_, which determines error detection capability:
+
+- _HD=3_: Detects all 1-bit and 2-bit errors (but NOT all 3-bit errors)
+- _HD=4_: Detects all 1-bit, 2-bit, and 3-bit errors (but NOT all 4-bit errors)
+
+The number of detectable bit errors is always HD minus 1.
 
 ## References
 
