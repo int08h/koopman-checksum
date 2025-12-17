@@ -142,7 +142,7 @@ This crate is `no_std` compatible by default. The `std` feature is enabled by de
 
 ```toml
 [dependencies]
-koopman-checksum = { version = "0.1", default-features = false }
+koopman-checksum = { version = "1.0", default-features = false }
 ```
 
 ## Performance
