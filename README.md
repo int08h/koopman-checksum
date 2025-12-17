@@ -13,7 +13,7 @@ The Koopman checksum provides **Hamming Distance 3 (HD=3)** fault detection for 
 
 - Better fault detection than Fletcher/Adler dual-sum checksums for the same output check value size
 - Simpler computation than CRC (uses integer division, not polynomial arithmetic)
-- HD=3 detection for data up to 13 bytes (8-bit), 4,096 bytes (16-bit), or 134MiB (32-bit)
+- HD=3 detection for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MiB (32-bit)
 - HD=4 detection with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
 
 ### Algorithm

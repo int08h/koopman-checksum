@@ -18,6 +18,7 @@ std = []
 
 [dev-dependencies]
 criterion = "0.5"
+rayon = "1.10"
 
 [[bench]]
 name = "benchmarks"

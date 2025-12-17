@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "chapter7_examples.h"
+//#include "chapter7_examples.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <assert.h>
 
-static const uint32_t initialSeed = SEED;  // initial sum
+static const uint32_t initialSeed = 4;  // initial sum
 
 // ----------------------
 // Example from section 7.7.2 
@@ -212,5 +215,25 @@ uint32_t Koopman32B(uint8_t dataWord[],
   // Append four bytes of implicit zeros
   sum = (sum<<32) % modulus; 
   return((uint32_t)sum);
+}
+
+void main() {
+    uint8_t data16_a[4092] = {0};
+    data16_a[0] = 0x80;
+    uint32_t cs16_a = Koopman16B(data16_a, 4092, 65519);
+    printf("cs16_1 = %i\n", cs16_a);
+
+    uint8_t data16_b[4092] = {0};
+    data16_b[4091] = 1;
+    uint32_t cs16_b = Koopman16B(data16_b, 4092, 65519);
+    printf("cs16_2 = %i\n", cs16_b);
+
+    uint8_t data8_a[] = {1, 0};
+    uint32_t cs8_1 = Koopman8B(data8_a, 2, 253);
+    printf("cs8_1 = %i\n", cs8_1);
+
+    uint8_t data8_b[] = {0, 3};
+    uint32_t cs8_2 = Koopman8B(data8_b, 2, 253);
+    printf("cs8_2 = %i\n", cs8_2);
 }
 
