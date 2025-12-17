@@ -7,14 +7,23 @@ A no-std implementation of the Koopman checksum algorithm as described in:
 
 ## Overview
 
-The Koopman checksum provides **Hamming Distance 3 (HD=3)** fault detection for significantly longer data words than traditional dual-sum checksums like Adler, while using a single running sum.
+The Koopman checksum provides fault detection for significantly longer data values than dual-sum checksums like Adler, while using a single running sum.
 
 ### Advantages of Koopman Checksum
 
 - Better fault detection than Fletcher/Adler dual-sum checksums for the same output check value size
 - Simpler computation than CRC (uses integer division, not polynomial arithmetic)
-- HD=3 detection for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MiB (32-bit)
-- HD=4 detection with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
+- Detects all 1-2 bit errors for data up to 13 bytes (8-bit), 4,092 bytes (16-bit), or 134MiB (32-bit)
+- Detects all 1-3 bit errors with '*p' parity variants for data up to 5 bytes (8-bit), 2,044 bytes (16-bit), or 134MB (32-bit)
+
+### Understanding Hamming Distance (HD)
+
+HD refers to the minimum Hamming distance of the _code_, which determines error detection capability:
+
+- _HD=3_: Detects all 1-bit and 2-bit errors (but NOT all 3-bit errors)
+- _HD=4_: Detects all 1-bit, 2-bit, and 3-bit errors (but NOT all 4-bit errors)
+
+The number of detectable bit errors is always HD minus 1.
 
 ### Algorithm
 
@@ -44,13 +53,13 @@ use koopman_checksum::{koopman8, koopman16, koopman32};
 
 let data = b"Hello, World!";
 
-// 8-bit checksum (HD=3 up to 13 bytes)
+// 8-bit checksum (detects all 1-2 bit errors up to 13 bytes)
 let cs8 = koopman8(data, 0x01);
 
-// 16-bit checksum (HD=3 up to 4,092 bytes)
+// 16-bit checksum (detects all 1-2 bit errors up to 4,092 bytes)
 let cs16 = koopman16(data, 0x01);
 
-// 32-bit checksum (HD=3 up to 134,217,720 bytes)
+// 32-bit checksum (detects all 1-2 bit errors up to 134,217,720 bytes)
 let cs32 = koopman32(data, 0x01);
 ```
 
@@ -88,23 +97,61 @@ hasher.update(b"Third chunk");
 let checksum = hasher.finalize();
 ```
 
-### HD=4 Variants (with Parity)
+### Parity Variants (Detects all 1-3 bit errors)
 
-For applications requiring detection of all 3-bit errors:
+For applications requiring detection of all 1, 2, AND 3-bit errors, use the parity variants:
 
 ```rust
 use koopman_checksum::{koopman8p, koopman16p, koopman32p};
 
 let data = b"Critical data";
 
-// 8-bit with parity (HD=4 up to 5 bytes)
+// 8-bit with parity (detects all 1-3 bit errors up to 5 bytes)
 let cs8p = koopman8p(data, 0x01);
 
-// 16-bit with parity (HD=4 up to 2,044 bytes)
+// 16-bit with parity (detects all 1-3 bit errors up to 2,044 bytes)
 let cs16p = koopman16p(data, 0x01);
 
-// 32-bit with parity (HD=4 up to 134,217,720 bytes)
+// 32-bit with parity (detects all 1-3 bit errors up to 134,217,720 bytes)
 let cs32p = koopman32p(data, 0x01);
+```
+
+## Error Detection Capabilities
+
+| Variant    | Modulus      | Detects all 1-2 bit errors | Detects all 1-3 bit errors |
+|------------|--------------|---------------------------|---------------------------|
+| Koopman8   | 253          | up to 13 bytes            | -                         |
+| Koopman8P  | 125          | -                         | up to 5 bytes             |
+| Koopman16  | 65519        | up to 4092 bytes          | -                         |
+| Koopman16P | 32749        | -                         | up to 2044 bytes          |
+| Koopman32  | 4294967291   | up to 134M bytes          | -                         |
+| Koopman32P | 2147483629   | -                         | up to 134M bytes          |
+
+**Note:** Beyond these lengths, the checksums still provide error detection, but some multi-bit errors may go undetected.
+
+## Comparison with Other Checksums
+
+| Algorithm    | Detects all 1-2 bit errors (16-bit) | Computation          |
+|--------------|-------------------------------------|----------------------|
+| Fletcher-16  | up to ~21 bytes                     | Dual modular sums    |
+| Adler-16     | up to ~253 bytes                    | Dual modular sums    |
+| Koopman16    | **up to 4092 bytes**                | Single modular sum   |
+| CRC-16       | Varies by polynomial                | Polynomial division  |
+
+## Use Cases
+
+- Embedded systems: Simpler than CRC, better than Adler/Fletcher
+- Network protocols: Fast integrity checking
+- File storage: Corruption detection for small-to-medium files
+- Memory integrity: Detect bit flips in RAM
+
+## No-Std Support
+
+This crate is `no_std` compatible by default. The `std` feature is enabled by default but can be disabled:
+
+```toml
+[dependencies]
+koopman-checksum = { version = "0.1", default-features = false }
 ```
 
 ## Performance
@@ -130,41 +177,6 @@ Each iteration's result (`sum[n]`) depends on the previous iteration's result (`
 The pure Rust implementation was consistently 20-40% faster than the simd implementations I could come up with. But
 I am not experienced with simd techniques. If you know how to speed things up, please submit a PR!
 
-## Hamming Distance Capabilities
-
-| Variant    | Modulus      | HD=3 Length  | HD=4 Length |
-|------------|--------------|--------------|-------------|
-| Koopman8   | 253          | 13 bytes     | -           |
-| Koopman8P  | 125          | -            | 5 bytes     |
-| Koopman16  | 65519        | 4092 bytes   | -           |
-| Koopman16P | 32749        | -            | 2044 bytes  |
-| Koopman32  | 4294967291   | 134M bytes   | -           |
-| Koopman32P | 2147483629   | -            | 134M bytes  |
-
-## Comparison with Other Checksums
-
-| Algorithm    | HD=3 Length (16-bit) | Computation          |
-|--------------|----------------------|----------------------|
-| Fletcher-16  | ~21 bytes            | Dual modular sums    |
-| Adler-16     | ~253 bytes           | Dual modular sums    |
-| Koopman16    | **4092 bytes**       | Single modular sum   |
-| CRC-16       | Varies by polynomial | Polynomial division  |
-
-## Use Cases
-
-- Embedded systems: Simpler than CRC, better than Adler/Fletcher
-- Network protocols: Fast integrity checking
-- File storage: Corruption detection for small-to-medium files
-- Memory integrity: Detect bit flips in RAM
-
-## No-Std Support
-
-This crate is `no_std` compatible by default. The `std` feature is enabled by default but can be disabled:
-
-```toml
-[dependencies]
-koopman-checksum = { version = "0.1", default-features = false }
-```
 
 ## References
 

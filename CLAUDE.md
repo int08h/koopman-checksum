@@ -24,14 +24,17 @@ cargo bench
 
 ## Variants
 
-| Function | Bits | HD | Max Length |
-|----------|------|-----|------------|
-| koopman8 | 8 | 3 | 13 bytes |
-| koopman16 | 16 | 3 | 4092 bytes |
-| koopman32 | 32 | 3 | 134M bytes |
-| koopman8p | 8 | 4 | 5 bytes |
-| koopman16p | 16 | 4 | 2044 bytes |
-| koopman32p | 32 | 4 | 134M bytes |
+- **HD=3**: Detects all 1-bit and 2-bit errors (but NOT all 3-bit errors)
+- **HD=4**: Detects all 1-bit, 2-bit, and 3-bit errors (but NOT all 4-bit errors)
+
+| Function | Bits | Detects | Max Length |
+|----------|------|---------|------------|
+| koopman8 | 8 | all 1-2 bit errors | 13 bytes |
+| koopman16 | 16 | all 1-2 bit errors | 4092 bytes |
+| koopman32 | 32 | all 1-2 bit errors | 134M bytes |
+| koopman8p | 8 | all 1-3 bit errors | 5 bytes |
+| koopman16p | 16 | all 1-3 bit errors | 2044 bytes |
+| koopman32p | 32 | all 1-3 bit errors | 134M bytes |
 
 ## Notes
 - Do not add "crated by claude" to commit messages

@@ -1,27 +1,28 @@
-//! Exhaustive Hamming Distance verification tests for Koopman checksums.
+//! Exhaustive error detection verification tests for Koopman checksums.
 //!
-//! These tests verify the HD=3 and HD=4 claims by exhaustively testing all
-//! possible 1-bit, 2-bit, and (for parity variants) 3-bit error patterns
-//! in the data portion.
+//! ## Understanding Hamming Distance (HD)
 //!
-//! Note: The HD guarantee applies to errors in the DATA, not the checksum.
-//! The checksum is the redundancy that enables detection of data errors.
+//! - **HD=3**: Detects all 1-bit and 2-bit errors (but NOT all 3-bit errors)
+//! - **HD=4**: Detects all 1-bit, 2-bit, and 3-bit errors (but NOT all 4-bit errors)
+//!
+//! These tests exhaustively verify these detection guarantees by testing all
+//! possible error patterns in the data portion.
 //!
 //! # Test Organization
 //!
-//! - **8-bit tests**: Test ALL lengths from 1 byte up to max HD length, complete in seconds
+//! - **8-bit tests**: Test ALL lengths from 1 byte up to max length, complete in seconds
 //! - **16-bit tests**: Test at max length only, complete in hours to days
 //!
 //! Each test runs with both all-zero data and non-zero pattern data.
 //!
 //! # Available Tests
 //!
-//! | Name | Description | Time |
+//! | Name | Description | Run Time (AMD 9950X) |
 //! |------|-------------|------|
-//! | `koopman8_hd3_exhaustive` | koopman8 all lengths 1-13 bytes, all 1- and 2-bit errors | seconds |
-//! | `koopman8p_hd4_exhaustive` | koopman8p all lengths 1-5 bytes, all 1-, 2-, 3-bit errors | seconds |
-//! | `koopman16_hd3_exhaustive` | koopman16 at max 4092 bytes, all 1- and 2-bit errors | hours |
-//! | `koopman16p_hd4_exhaustive` | koopman16p at max 2044 bytes, all 1-, 2-, 3-bit errors | days+ |
+//! | `koopman8_hd3_exhaustive` | koopman8 all lengths 1-13, verifies all 1-2 bit errors detected | seconds |
+//! | `koopman8p_hd4_exhaustive` | koopman8p all lengths 1-5, verifies all 1-3 bit errors detected | seconds |
+//! | `koopman16_hd3_exhaustive` | koopman16 at 4092 bytes, verifies all 1-2 bit errors detected | ~1 day |
+//! | `koopman16p_hd4_exhaustive` | koopman16p at 2044 bytes, verifies all 1-3 bit errors detected | week+ |
 //! | `hd_quick_sanity` | Quick sanity check of all variants | instant |
 //!
 //! # Running Tests
@@ -42,16 +43,16 @@ use rayon::prelude::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 
-/// Maximum data length for koopman8 with HD=3 guarantee
+/// Maximum data length for koopman8 to detect all 1-2 bit errors
 const MAX_LEN_8: usize = 13;
 
-/// Maximum data length for koopman16 with HD=3 guarantee
+/// Maximum data length for koopman16 to detect all 1-2 bit errors
 const MAX_LEN_16: usize = 4092;
 
-/// Maximum data length for koopman8p with HD=4 guarantee
+/// Maximum data length for koopman8p to detect all 1-3 bit errors
 const MAX_LEN_8P: usize = 5;
 
-/// Maximum data length for koopman16p with HD=4 guarantee
+/// Maximum data length for koopman16p to detect all 1-3 bit errors
 const MAX_LEN_16P: usize = 2044;
 
 /// Generate all-zero test data of given length.
@@ -59,7 +60,7 @@ fn generate_zeros(len: usize) -> Vec<u8> {
     vec![0; len]
 }
 
-/// Generate non-zero pattern test data of given length.
+/// Generate pattern test data of given length.
 fn generate_pattern(len: usize) -> Vec<u8> {
     (0..len).map(|i| (i.wrapping_mul(7).wrapping_add(13)) as u8).collect()
 }

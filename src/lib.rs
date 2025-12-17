@@ -10,22 +10,28 @@ use core::num::{NonZeroU32, NonZeroU64};
 // Constants
 // ============================================================================
 
-/// Recommended modulus for 8-bit Koopman checksum (HD=3 up to 13 bytes)
+/// Recommended modulus for 8-bit Koopman checksum.
+/// Detects all 1-bit and 2-bit errors for data up to 13 bytes.
 pub const MODULUS_8: u32 = 253;
 
-/// Recommended modulus for 16-bit Koopman checksum (HD=3 up to 4092 bytes)
+/// Recommended modulus for 16-bit Koopman checksum.
+/// Detects all 1-bit and 2-bit errors for data up to 4092 bytes.
 pub const MODULUS_16: u32 = 65519;
 
-/// Recommended modulus for 32-bit Koopman checksum (HD=3 up to 134,217,720 bytes)
+/// Recommended modulus for 32-bit Koopman checksum.
+/// Detects all 1-bit and 2-bit errors for data up to 134,217,720 bytes.
 pub const MODULUS_32: u64 = 4294967291;
 
-/// Modulus for 7-bit Koopman checksum with parity (HD=4 up to 5 bytes)
+/// Modulus for 7-bit Koopman checksum with parity.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 5 bytes.
 pub const MODULUS_7P: u32 = 125;
 
-/// Modulus for 15-bit Koopman checksum with parity (HD=4 up to 2044 bytes)
+/// Modulus for 15-bit Koopman checksum with parity.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 2044 bytes.
 pub const MODULUS_15P: u32 = 32749;
 
-/// Modulus for 31-bit Koopman checksum with parity (HD=4 up to 134,217,720 bytes)
+/// Modulus for 31-bit Koopman checksum with parity.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 134,217,720 bytes.
 pub const MODULUS_31P: u64 = 2147483629;
 
 const NONZERO_MODULUS_8: NonZeroU32 = NonZeroU32::new(MODULUS_8).unwrap();
@@ -44,7 +50,7 @@ const NONZERO_MODULUS_31P: NonZeroU64 = NonZeroU64::new(MODULUS_31P).unwrap();
 // ============================================================================
 
 /// Fast reduction for modulus 65519 = 2^16 - 17
-/// Input: x up to (MODULUS_16 - 1) << 16 + 0xFFFF ≈ 4_293_918_719 (remains < 2^32)
+/// Input: x up to (MODULUS_16 - 1) << 16 + 0xFFFF ~= 4_293_918_719 (remains < 2^32)
 #[inline(always)]
 fn fast_mod_65519(x: u32) -> u32 {
     // First reduction: x = hi * 2^16 + lo, result = hi * 17 + lo
@@ -74,14 +80,11 @@ fn fast_mod_4294967291(x: u64) -> u64 {
 
 /// Compute an 8-bit Koopman checksum.
 ///
-/// Provides HD=3 fault detection for data words up to 13 bytes with modulus 253.
+/// Detects all 1-bit and 2-bit errors for data up to 13 bytes with modulus 253.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value, **IMPORTANT**: must be non-zero and odd
-///
-/// # Use an odd seed value
-/// To ensure HD=3 fault detection, the initial seed must be odd and non-zero.
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 8-bit checksum value, or 0 if data is empty
@@ -103,14 +106,11 @@ pub fn koopman8(data: &[u8], initial_seed: u8) -> u8 {
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value, **IMPORTANT**: must be non-zero and odd
+/// * `initial_seed` - Initial seed value
 /// * `modulus` - The modulus to use (recommended: 253 or 239). Must be non-zero.
 ///
 /// # Returns
 /// 8-bit checksum value, or 0 if data is empty
-///
-/// # Use an odd seed value
-/// To ensure HD=3 fault detection, the initial seed must be odd and non-zero.
 ///
 /// # Example
 /// ```rust
@@ -123,12 +123,11 @@ pub fn koopman8(data: &[u8], initial_seed: u8) -> u8 {
 #[inline]
 #[must_use]
 pub fn koopman8_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32) -> u8 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u32 = (data[0] ^ initial_seed) as u32;
 
     for &byte in &data[1..] {
@@ -143,11 +142,11 @@ pub fn koopman8_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32)
 
 /// Compute a 16-bit Koopman checksum.
 ///
-/// Provides HD=3 fault detection for data words up to 4092 bytes.
+/// Detects all 1-bit and 2-bit errors for data up to 4092 bytes.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 16-bit checksum value, or 0 if data is empty
@@ -213,12 +212,11 @@ pub fn koopman16(data: &[u8], initial_seed: u8) -> u16 {
 #[inline]
 #[must_use]
 pub fn koopman16_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32) -> u16 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u32 = (data[0] ^ initial_seed) as u32;
 
     for &byte in &data[1..] {
@@ -234,11 +232,11 @@ pub fn koopman16_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32
 
 /// Compute a 32-bit Koopman checksum.
 ///
-/// Provides HD=3 fault detection for data words up to 134,217,720 bytes.
+/// Detects all 1-bit and 2-bit errors for data up to 134,217,720 bytes.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 32-bit checksum value, or 0 if data is empty
@@ -294,12 +292,11 @@ pub fn koopman32(data: &[u8], initial_seed: u8) -> u32 {
 #[inline]
 #[must_use]
 pub fn koopman32_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU64) -> u32 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u64 = (data[0] ^ initial_seed) as u64;
 
     for &byte in &data[1..] {
@@ -327,12 +324,12 @@ fn parity8(x: u8) -> u8 {
 
 /// Compute an 8-bit Koopman checksum with parity (7-bit checksum + 1 parity bit).
 ///
-/// Provides HD=4 fault detection for data words up to 5 bytes.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 5 bytes.
 /// Uses modulus 125 for the 7-bit checksum portion.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 8-bit value: 7-bit checksum in upper bits, parity in LSB, or 0 if data is empty
@@ -356,7 +353,7 @@ pub fn koopman8p(data: &[u8], initial_seed: u8) -> u8 {
 /// # Arguments
 /// * `data` - The data bytes to checksum
 /// * `initial_seed` - Initial seed value
-/// * `modulus` - The modulus for the 7-bit checksum. Must be non-zero and ≤ 127.
+/// * `modulus` - The modulus for the 7-bit checksum. Must be non-zero and <= 127.
 ///
 /// # Returns
 /// 8-bit value: 7-bit checksum in upper bits, parity in LSB, or 0 if data is empty
@@ -372,12 +369,11 @@ pub fn koopman8p(data: &[u8], initial_seed: u8) -> u8 {
 #[inline]
 #[must_use]
 pub fn koopman8p_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32) -> u8 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u32 = (data[0] ^ initial_seed) as u32;
     let mut psum: u8 = sum as u8;
 
@@ -396,12 +392,12 @@ pub fn koopman8p_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32
 
 /// Compute a 16-bit Koopman checksum with parity (15-bit checksum + 1 parity bit).
 ///
-/// Provides HD=4 fault detection for data words up to 2044 bytes.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 2044 bytes.
 /// Uses modulus 32749 for the 15-bit checksum portion.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 16-bit value: 15-bit checksum in upper bits, parity in LSB, or 0 if data is empty
@@ -441,12 +437,11 @@ pub fn koopman16p(data: &[u8], initial_seed: u8) -> u16 {
 #[inline]
 #[must_use]
 pub fn koopman16p_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU32) -> u16 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u32 = (data[0] ^ initial_seed) as u32;
     let mut psum: u8 = sum as u8;
 
@@ -466,12 +461,12 @@ pub fn koopman16p_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU3
 
 /// Compute a 32-bit Koopman checksum with parity (31-bit checksum + 1 parity bit).
 ///
-/// Provides HD=4 fault detection for data words up to 134,217,720 bytes.
+/// Detects all 1-bit, 2-bit, and 3-bit errors for data up to 134,217,720 bytes.
 /// Uses modulus 2147483629 for the 31-bit checksum portion.
 ///
 /// # Arguments
 /// * `data` - The data bytes to checksum
-/// * `initial_seed` - Initial seed value (typically 0)
+/// * `initial_seed` - Initial seed value
 ///
 /// # Returns
 /// 32-bit value: 31-bit checksum in upper bits, parity in LSB, or 0 if data is empty
@@ -495,7 +490,7 @@ pub fn koopman32p(data: &[u8], initial_seed: u8) -> u32 {
 /// # Arguments
 /// * `data` - The data bytes to checksum
 /// * `initial_seed` - Initial seed value
-/// * `modulus` - The modulus for the 31-bit checksum. Must be non-zero and ≤ 2^31-1.
+/// * `modulus` - The modulus for the 31-bit checksum. Must be non-zero and <= 2^31-1.
 ///
 /// # Returns
 /// 32-bit value: 31-bit checksum in upper bits, parity in LSB, or 0 if data is empty
@@ -511,12 +506,11 @@ pub fn koopman32p(data: &[u8], initial_seed: u8) -> u32 {
 #[inline]
 #[must_use]
 pub fn koopman32p_with_modulus(data: &[u8], initial_seed: u8, modulus: NonZeroU64) -> u32 {
-    let modulus = modulus.get();
-
     if data.is_empty() {
         return 0;
     }
 
+    let modulus = modulus.get();
     let mut sum: u64 = (data[0] ^ initial_seed) as u64;
     let mut psum: u8 = sum as u8;
 
@@ -877,7 +871,7 @@ macro_rules! impl_streaming_parity_hasher {
 
 /// Incremental Koopman8P checksum calculator (7-bit checksum + 1 parity bit).
 ///
-/// Allows computing HD=4 checksums over data that arrives in chunks.
+/// Allows computing checksums over data that arrives in chunks.
 ///
 /// # Example
 /// ```rust
@@ -905,7 +899,7 @@ impl_streaming_parity_hasher!(
 
 /// Incremental Koopman16P checksum calculator (15-bit checksum + 1 parity bit).
 ///
-/// Allows computing HD=4 checksums over data that arrives in chunks.
+/// Allows computing checksums over data that arrives in chunks.
 ///
 /// # Example
 /// ```rust
@@ -934,7 +928,7 @@ impl_streaming_parity_hasher!(
 
 /// Incremental Koopman32P checksum calculator (31-bit checksum + 1 parity bit).
 ///
-/// Allows computing HD=4 checksums over data that arrives in chunks.
+/// Allows computing checksums over data that arrives in chunks.
 ///
 /// # Example
 /// ```rust
@@ -1194,7 +1188,6 @@ mod tests {
 
     #[test]
     fn test_single_bit_detection() {
-        // Koopman checksums should detect all single-bit errors
         let original = koopman16(TEST_DATA, 0);
 
         for i in 0..TEST_DATA.len() {
@@ -1210,7 +1203,6 @@ mod tests {
 
     #[test]
     fn test_reference_calculation() {
-        // Manual calculation for simple input to verify algorithm
         // Input: [0x12, 0x34, 0x56] with initial seed 0, modulus 253
         // Step 1: sum = 0x12 = 18
         // Step 2: sum = ((18 << 8) + 0x34) % 253 = 4660 % 253 = 106
@@ -1249,7 +1241,6 @@ mod tests {
 
     #[test]
     fn test_parity_variants_detect_single_bit_errors() {
-        // Parity variants should detect all single-bit errors (HD=4)
         let data = b"Test";
         let original = koopman16p(data, 0);
 
