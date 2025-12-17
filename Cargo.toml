@@ -1,6 +1,6 @@
 [package]
 name = "koopman-checksum"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 authors = ["Stuart Stock <stuart@int08h.com>"]
 description = "Koopman checksum algorithm implementation. The Koopman checksum provides Hamming Distance 3 (HD=3) fault detection for significantly longer data words than traditional dual-sum checksums like Adler or Fletcher."
@@ -17,8 +17,7 @@ default = ["std"]
 std = []
 
 [dev-dependencies]
-criterion = "0.5"
-rayon = "1.10"
+criterion = "0.8"
 
 [[bench]]
 name = "benchmarks"
